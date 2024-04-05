@@ -1,4 +1,4 @@
-package etrog
+package feijoa
 
 import (
 	"context"
@@ -11,22 +11,22 @@ import (
 )
 
 // stateProcessorL1InfoTreeInterface interface required from state
-type stateProcessorL1InfoTreeInterface interface {
-	AddL1InfoTreeLeaf(ctx context.Context, L1InfoTreeLeaf *state.L1InfoTreeLeaf, dbTx pgx.Tx) (*state.L1InfoTreeExitRootStorageEntry, error)
+type stateProcessorL1InfoTreeRecursiveInterface interface {
+	AddL1InfoTreeRecursiveLeaf(ctx context.Context, L1InfoTreeLeaf *state.L1InfoTreeLeaf, dbTx pgx.Tx) (*state.L1InfoTreeExitRootStorageEntry, error)
 }
 
 // ProcessorL1InfoTreeUpdate implements L1EventProcessor for GlobalExitRootsOrder
 type ProcessorL1InfoTreeUpdate struct {
 	actions.ProcessorBase[ProcessorL1InfoTreeUpdate]
-	state stateProcessorL1InfoTreeInterface
+	state stateProcessorL1InfoTreeRecursiveInterface
 }
 
 // NewProcessorL1InfoTreeUpdate new processor for GlobalExitRootsOrder
-func NewProcessorL1InfoTreeUpdate(state stateProcessorL1InfoTreeInterface) *ProcessorL1InfoTreeUpdate {
+func NewProcessorL1InfoTreeUpdate(state stateProcessorL1InfoTreeRecursiveInterface) *ProcessorL1InfoTreeUpdate {
 	return &ProcessorL1InfoTreeUpdate{
 		ProcessorBase: *actions.NewProcessorBase[ProcessorL1InfoTreeUpdate](
 			[]etherman.EventOrder{etherman.L1InfoTreeOrder},
-			actions.ForksIdToElderberry),
+			actions.ForksIdOnlyFeijoa),
 		state: state}
 }
 
@@ -44,11 +44,11 @@ func (p *ProcessorL1InfoTreeUpdate) Process(ctx context.Context, order etherman.
 		GlobalExitRoot:    ger,
 		PreviousBlockHash: l1InfoTree.PreviousBlockHash,
 	}
-	entry, err := p.state.AddL1InfoTreeLeaf(ctx, &l1IntoTreeLeaf, dbTx)
+	entry, err := p.state.AddL1InfoTreeRecursiveLeaf(ctx, &l1IntoTreeLeaf, dbTx)
 	if err != nil {
-		log.Errorf("error storing the l1InfoTree(etrog). BlockNumber: %d, error: %v", l1Block.BlockNumber, err)
+		log.Errorf("error storing the l1InfoTree(feijoa). BlockNumber: %d, error: %v", l1Block.BlockNumber, err)
 		return err
 	}
-	log.Infof("L1InfoTree(etrog) stored. BlockNumber: %d,GER:%s L1InfoTreeIndex: %d L1InfoRoot:%s", l1Block.BlockNumber, entry.GlobalExitRoot.GlobalExitRoot, entry.L1InfoTreeIndex, entry.L1InfoTreeRoot)
+	log.Infof("L1InfoTree(feijoa) stored. BlockNumber: %d,GER:%s L1InfoTreeIndex: %d L1InfoRoot:%s", l1Block.BlockNumber, entry.GlobalExitRoot.GlobalExitRoot, entry.L1InfoTreeIndex, entry.L1InfoTreeRoot)
 	return nil
 }
